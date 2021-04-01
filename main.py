@@ -1,8 +1,5 @@
 # -*- coding: utf-8
-# This is a sample Python script.
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import os
 import sys
 import xlrd2
@@ -33,7 +30,7 @@ class FileSave:
         self.dir = ""   # 保存绝对路径
         self.url = url  # URL绝对路径
         self.status = 0 # 状态 0(未下载) 1(成功下载)
-        self.size = 0
+        self.size = 0	# 文件大小
         self.status_code = 0
 
     def ready_dir(self):
@@ -44,65 +41,64 @@ class FileSave:
             self.dir = self.name
 
         if not os.path.isdir(self.dir):
-            print("创建目录：" + self.dir)
+            #print("创建目录：" + self.dir)
             os.makedirs(self.dir)
-        else:
-            print("目录存在：" + self.dir)
 
     def down_file(self):
         # 判断路径是否存在
         self.ready_dir()
-        # 判断文件正确与否
-        if os.path.exists(self.name):
-            fsize = os.path.getsize(self.name)
 
-            if self.size == fsize:
-                print("文件已存在且文件大小一致，忽略：%s，文件的大小：%.2fKBit" % (self.name, (fsize / 1024)))
-            else:
-                os.remove(self.name)
-                print("文件已存在但文件大小不一致，删除：%s，文件的大小：%.2f/%.2fKBit" % (self.name, (fsize / 1024), (self.size/1024)))
         # 判断文件是否存在
+        global GLOBAL_DOWN_SUCCE
+        global GLOBAL_DOWN_ERROR
+        fsize = 0
         if os.path.exists(self.name):
             fsize = os.path.getsize(self.name)
-            print("文件已存在，忽略：%s，文件的大小：%.2fKBit" % ( self.name ,(fsize/1024)))
-        else:
-            start = time.time()  # 下载开始时间
-            try:
-                response = requests.get(self.url, stream=True)
-                self.status_code = response.status_code
-                size = 0  # 初始化已下载大小
-                chunk_size = 1024  # 每次下载的数据大小
-                content_size = int(response.headers['content-length'])  # 下载文件总大小
-                self.size = content_size
-                if response.status_code == 200:  # 判断是否响应成功
-                    print('开始下载，文件大小:[{size:.2f}] MB'.format(size = content_size / chunk_size / 1024))  # 开始下载，显示下载文件大小
-                    with open(self.name, 'wb') as file:  # 显示进度条
-                        for data in response.iter_content(chunk_size=chunk_size):
-                            file.write(data)
-                            size += len(data)
-                            print('\r' + '[下载进度]：%s%.2f%%' % ('>' * int(size * 50 / content_size), float(size / content_size * 100)), end=' ')
-                        file.flush()
+            print("文件已存在且文件的大小：%.2fKBit (%s)" % ((fsize/1024), self.name))
 
-                end = time.time()  # 下载结束时间
-                total = end - start
-                speed = content_size/(total * 1024)
-                print('下载完成！用时： %.2f秒，占用带宽：%.2fKBit/秒' % (total, speed))  # 输出下载用时时间
-                fsize = os.path.getsize(self.name)
-                if fsize == self.size:
-                    self.status = 1
-                    global  GLOBAL_DOWN_SIZE
-                    GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + content_size
-                    global GLOBAL_DOWN_SUCCE
+        start = time.time()  # 下载开始时间
+        try:
+            response = requests.get(self.url, stream=True)
+            self.status_code = response.status_code
+            size = 0  # 初始化已下载大小
+            chunk_size = 1024  # 每次下载的数据大小
+            self.size = content_size = int(response.headers['content-length'])  # 下载文件总大小
+            if response.status_code == 200:  # 判断是否响应成功
+                if fsize != 0 and fsize == self.size:
+                    print("文件已成功下载，无需再下载。")
+                    # 更新下载成功列表
                     GLOBAL_DOWN_SUCCE.append(self)
-                else:
-                    print("下载完成，文件大小不正确。")
-                str_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-                print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE/(1024 * 1024), str_time))
-            except:
-                self.status = 0
-                print("文件下载失败：" + self.url + "，错误码：" + str(response.status_code))
-                global GLOBAL_DOWN_ERROR
+                    return
+                print('开始下载，文件大小:[{size:.2f}] MB'.format(size = content_size / chunk_size / 1024))  # 开始下载，显示下载文件大小
+                with open(self.name, 'wb') as file:  # 显示进度条
+                    for data in response.iter_content(chunk_size=chunk_size):
+                        file.write(data)
+                        size += len(data)
+                        print('\r' + '[下载进度]：%s%.2f%%' % ('>' * int(size * 50 / content_size), float(size / content_size * 100)), end=' ')
+                    file.flush()
+
+            end = time.time()  # 下载结束时间
+            total = end - start
+            speed = content_size/(total * 1024)
+            print('下载完成！用时： %.2f秒，占用带宽：%.2fKBit/秒' % (total, speed))  # 输出下载用时时间
+            fsize = os.path.getsize(self.name)
+            if fsize == self.size:
+                self.status = 1
+                # 更新下载总量
+                global  GLOBAL_DOWN_SIZE
+                GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + content_size
+                # 更新下载成功列表
+                GLOBAL_DOWN_SUCCE.append(self)
+            else:
+                print("下载完成但文件大小不正确(%d/%d)。"%(fsize, self.size))
                 GLOBAL_DOWN_ERROR.append(self)
+
+            str_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+            print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE/(1024 * 1024), str_time))
+        except:
+            self.status = 0
+            print("文件下载失败：" + self.url + "，错误码：" + str(response.status_code))
+            GLOBAL_DOWN_ERROR.append(self)
 
 def get_down_object():
     if os.path.exists(ROOT_OBJECT):
@@ -113,26 +109,37 @@ def get_down_object():
     else:
         get_books_list()
 
+def save_error_obj():
+    global GLOBAL_DOWN_ERROR
+    l = len(GLOBAL_DOWN_ERROR)
+    if l % 100 == 0:
+        update_status_object_file
+
 def download_file():
     global GLOBAL_DOWN_LIST
     number = len(GLOBAL_DOWN_LIST)
     i = 1
     for o in GLOBAL_DOWN_LIST:
-        print("开始处理[%d/%d]" % (i, number))
+        print("开始处理：下载/总数[%d/%d]，当前成功/错误[%d/%d]" % (i, number, len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERROR)))
         i = i + 1
-        if o.status == 1:
-            # 判断文件大小
-            if os.path.exists(o.name):
-                fsize = os.path.getsize(o.name)
-                if fsize == o.size:
-                    print("文件已成功下载：" + o.name)
-                else:
-                    print("文件下载已失败：" + o.name)
-                    o.status = 0
-                    o.down_file()
+        o.down_file()
+        save_error_obj()
+
+def tosize(size):
+    def strofsize(integer, remainder, level):
+        if integer >= 1024:
+            remainder = integer % 1024
+            integer //= 1024
+            level += 1
+            return strofsize(integer, remainder, level)
         else:
-            print("文件将下载：" + o.name)
-            o.down_file()
+            return integer, remainder, level
+
+    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    integer, remainder, level = strofsize(size, 0, 0)
+    if level+1 > len(units):
+        level = -1
+    return ( '{}.{:>03d} {}'.format(integer, remainder, units[level]) )
 
 def get_books_list():
     book = xlrd2.open_workbook(ROOT_EXCEL)
@@ -144,8 +151,6 @@ def get_books_list():
         # 特殊字符替换
         save_dir = save_dir.replace('?', '.')
         down_url = get_down_url(url_list[2])# 下载URL
-        #print("下载链接：" + down_url)
-        #print("保存文件：" + save_dir)
 
         file_obj = FileSave(save_dir, down_url)
         global GLOBAL_DOWN_LIST
@@ -162,11 +167,6 @@ def update_status_object_file():
     global GLOBAL_DOWN_ERROR
     f = open(ROOT_ERROR_OBJECT, 'wb')
     pickle.dump(GLOBAL_DOWN_ERROR, f)
-
-    global GLOBAL_DOWN_SUCCE
-    f = open(ROOT_SUCCESS_OBJECT, 'wb')
-    pickle.dump(GLOBAL_DOWN_SUCCE, f)
-
     print("下载成功/错误文件个数：[%d/%d]" % (len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERROR)))
 
 def get_down_url(url):
