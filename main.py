@@ -74,7 +74,8 @@ class FileSave:
                     for data in response.iter_content(chunk_size=chunk_size):
                         file.write(data)
                         size += len(data)
-                        print('\r' + '[下载进度]：%s%.2f%%' % ('>' * int(size * 50 / content_size), float(size / content_size * 100)), end=' ')
+                        now_t = time.time()
+                        print('\r' + '[下载进度]：%s%.2f%%(实时速度：%.2fKB/秒)' % ('>' * int(size * 50 / content_size), float(size / content_size * 100), float(size/((now_t - start) * 1024))), end=' ')
                     file.flush()
 
             end = time.time()  # 下载结束时间
