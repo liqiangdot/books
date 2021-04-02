@@ -226,7 +226,8 @@ def download_file():
     number = len(GLOBAL_DOWN_LIST)
     i = 1
     for o in GLOBAL_DOWN_LIST:
-        print("开始处理：当前下载/总数[%d/%d]，状态：已成功/别处下载/错误[%d/%d/%d]" % (i, number, len(GLOBAL_DOWN_SUCCE) , len(GLOBAL_DOWN_ERR200), len(GLOBAL_DOWN_ERROR)))
+        str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        print("开始处理：当前下载/总数[%d/%d]，状态：已成功/别处下载/错误[%d/%d/%d] (%s)" % (i, number, len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERR200), len(GLOBAL_DOWN_ERROR), str_time))
         i = i + 1
         o.down_file()
         save_error_obj()
