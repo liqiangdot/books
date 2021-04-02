@@ -133,6 +133,8 @@ class FileSave:
         else:
             content_length = 0
 
+        return content_length
+
     def down_file(self):
         # 判断路径是否存在
         self.ready_dir()
