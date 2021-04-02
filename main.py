@@ -125,6 +125,14 @@ class FileSave:
         GLOBAL_DOWN_ERROR.append(self)
         self.write_err_file()
 
+    def get_length(self):
+        is_chunked = self.resp.headers.get('transfer-encoding', '') == 'chunked'
+        content_length_s = self.resp.headers.get('content-length')
+        if not is_chunked and content_length_s.isdigit():
+            content_length = int(content_length_s)
+        else:
+            content_length = 0
+
     def down_file(self):
         # 判断路径是否存在
         self.ready_dir()
@@ -139,16 +147,21 @@ class FileSave:
         start = time.time()  # 下载开始时间
         try:
             response = requests.get(self.url, stream=True)
+            self.resp = response
             self.status_code = response.status_code
             size = 0  # 初始化已下载大小
             chunk_size = 1024  # 每次下载的数据大小
-            self.size = content_size = int(response.headers['content-length'])  # 下载文件总大小
+
             if response.status_code == 200:  # 判断是否响应成功
+                self.size = content_size = self.get_length()  # 下载文件总大小
                 if fsize != 0 and fsize == self.size:
                     print("文件已存在且文件的大小(%s)检查正确，无需下载！ {%s}" % (size2human(fsize), self.name))
                     # 更新下载成功列表
                     GLOBAL_DOWN_SUCCE.append(self)
                     return
+                if self.size == 0:
+                    print('不能正确获取到将下载文件大小(%s)' % (self.url))
+                    raise
                 print('开始处理：%s' %(self.url))
                 print('开始下载，文件大小:[{size:.2f}] MB'.format(size = content_size / chunk_size / 1024))  # 开始下载，显示下载文件大小
                 with open(self.name, 'wb') as file:  # 显示进度条
