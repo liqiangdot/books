@@ -4,6 +4,7 @@ import os
 import sys
 import xlrd2
 import time
+import random
 import pickle
 import requests
 import urllib.request
@@ -18,10 +19,63 @@ ROOT_EXCEL = '1.xlsx'
 ROOT_OBJECT = 'all.object'
 ROOT_ERROR_OBJECT = 'err.object'
 ROOT_SUCCESS_OBJECT = 'suc.object'
+ROOT_ERROR_file = 'error.txt'
+ROOT_ERR200_file = 'err200.txt'
 GLOBAL_DOWN_LIST = []
 GLOBAL_DOWN_ERROR = []
+GLOBAL_DOWN_ERR200 = []
 GLOBAL_DOWN_SUCCE = []
 GLOBAL_DOWN_SIZE = 0
+
+class GetOtherLink:
+    def __init__(self, url):
+        self.url = url
+
+    def get_page(self):
+        USER_AGENTS = [
+            "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AcooBrowser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
+            "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Acoo Browser; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.0.04506)",
+            "Mozilla/4.0 (compatible; MSIE 7.0; AOL 9.5; AOLBuild 4337.35; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
+            "Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)",
+            "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 2.0.50727; Media Center PC 6.0)",
+            "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 1.0.3705; .NET CLR 1.1.4322)",
+            "Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 5.2; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2; .NET CLR 3.0.04506.30)",
+            "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN) AppleWebKit/523.15 (KHTML, like Gecko, Safari/419.3) Arora/0.3 (Change: 287 c9dfb30)",
+            "Mozilla/5.0 (X11; U; Linux; en-US) AppleWebKit/527+ (KHTML, like Gecko, Safari/419.3) Arora/0.6",
+            "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2pre) Gecko/20070215 K-Ninja/2.1.1",
+            "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
+            "Mozilla/5.0 (X11; Linux i686; U;) Gecko/20070322 Kazehakase/0.4.5",
+            "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.20 (KHTML, like Gecko) Chrome/19.0.1036.7 Safari/535.20",
+            "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52",
+        ]
+
+        random_agent = USER_AGENTS[random.randint(0, len(USER_AGENTS) - 1)]
+        headers = {
+            'User-Agent': random_agent,
+        }
+
+        while True:
+            try:
+                session = HTMLSession()
+                self.r = session.get(self.url, headers=headers)
+                self.r.raise_for_status()
+                return self.r
+            except requests.exceptions.RequestException as e:
+                print(e)
+                self.r = None
+                break
+
+            finally:
+                break
+        return self.r
+
+    def get_save(self):
+        self.get_page()
+        str_xpath = "/html/body/div[1]/div[3]/a"
+        other_url = self.r.html.xpath(str_xpath, first=True).links
+        return other_url
 
 class FileSave:
     # 传入文件名及URL都是已经处理过的，可以直接使用
@@ -32,6 +86,18 @@ class FileSave:
         self.status = 0 # 状态 0(未下载) 1(成功下载)
         self.size = 0	# 文件大小
         self.status_code = 0
+
+    def write_err_file(self):
+        global  ROOT_ERROR_file
+        with open(ROOT_ERROR_file, 'a') as f:
+            f.write(self.url + '\n')
+        return
+
+    def write_200_file(self):
+        global ROOT_ERR200_file
+        with open(ROOT_ERR200_file, 'a') as f:
+            f.write(self.url + '\n')
+        return
 
     def ready_dir(self):
         end_pos = self.name.rfind("\\")
@@ -44,6 +110,21 @@ class FileSave:
             #print("创建目录：" + self.dir)
             os.makedirs(self.dir)
 
+    def dow_error(self):
+        print("下载出现异常。")
+
+        if self.status_code == 200:
+            # 外部链接
+            Other = GetOtherLink(self.url)
+            self.url = Other.get_save()
+            self.down_file()
+
+            global GLOBAL_DOWN_ERR200
+            GLOBAL_DOWN_ERR200.append(self)
+            self.write_200_file()
+        GLOBAL_DOWN_ERROR.append(self)
+        self.write_err_file()
+
     def down_file(self):
         # 判断路径是否存在
         self.ready_dir()
@@ -54,7 +135,6 @@ class FileSave:
         fsize = 0
         if os.path.exists(self.name):
             fsize = os.path.getsize(self.name)
-            print("文件已存在且文件的大小：%.2fKBit (%s)" % ((fsize/1024), self.name))
 
         start = time.time()  # 下载开始时间
         try:
@@ -65,10 +145,11 @@ class FileSave:
             self.size = content_size = int(response.headers['content-length'])  # 下载文件总大小
             if response.status_code == 200:  # 判断是否响应成功
                 if fsize != 0 and fsize == self.size:
-                    print("文件已成功下载，无需再下载。")
+                    print("文件已存在且文件的大小(%s)检查正确，无需下载！ {%s}" % (size2human(fsize), self.name))
                     # 更新下载成功列表
                     GLOBAL_DOWN_SUCCE.append(self)
                     return
+                print('开始处理：%s' %(self.url))
                 print('开始下载，文件大小:[{size:.2f}] MB'.format(size = content_size / chunk_size / 1024))  # 开始下载，显示下载文件大小
                 with open(self.name, 'wb') as file:  # 显示进度条
                     for data in response.iter_content(chunk_size=chunk_size):
@@ -91,15 +172,27 @@ class FileSave:
                 # 更新下载成功列表
                 GLOBAL_DOWN_SUCCE.append(self)
             else:
-                print("下载完成但文件大小不正确(%d/%d)。"%(fsize, self.size))
-                GLOBAL_DOWN_ERROR.append(self)
+                if response.status_code == 200:
+                    print("文件可能保存在外部链接中(%s)。" % (self.name))
+                    GLOBAL_DOWN_ERR200.append(self)
+                    self.write_200_file()
+                else:
+                    print("下载完成但文件大小不正确(%d/%d)(%s)。"%(fsize, self.size, self.name))
+                    GLOBAL_DOWN_ERROR.append(self)
+                    self.write_err_file()
 
             str_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
             print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE/(1024 * 1024), str_time))
         except:
             self.status = 0
-            print("文件下载失败：" + self.url + "，错误码：" + str(response.status_code))
-            GLOBAL_DOWN_ERROR.append(self)
+            print("\033[1;31m文件下载失败：" + self.url + "，错误码：" + str(response.status_code) + "\033[0m")
+            if response.status_code == 200:
+                GLOBAL_DOWN_ERR200.append(self)
+                self.write_200_file()
+            else:
+                GLOBAL_DOWN_ERROR.append(self)
+                self.write_err_file()
+
 
 def get_down_object():
     if os.path.exists(ROOT_OBJECT):
@@ -117,30 +210,30 @@ def save_error_obj():
         update_status_object_file
 
 def download_file():
-    global GLOBAL_DOWN_LIST
     number = len(GLOBAL_DOWN_LIST)
     i = 1
     for o in GLOBAL_DOWN_LIST:
-        print("开始处理：下载/总数[%d/%d]，当前成功/错误[%d/%d]" % (i, number, len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERROR)))
+        print("开始处理：当前下载/总数[%d/%d]，状态：已成功/别处下载/错误[%d/%d/%d]" % (i, number, len(GLOBAL_DOWN_SUCCE) , len(GLOBAL_DOWN_ERR200), len(GLOBAL_DOWN_ERROR)))
         i = i + 1
         o.down_file()
         save_error_obj()
 
-def tosize(size):
-    def strofsize(integer, remainder, level):
-        if integer >= 1024:
-            remainder = integer % 1024
-            integer //= 1024
-            level += 1
-            return strofsize(integer, remainder, level)
-        else:
-            return integer, remainder, level
-
-    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-    integer, remainder, level = strofsize(size, 0, 0)
-    if level+1 > len(units):
-        level = -1
-    return ( '{}.{:>03d} {}'.format(integer, remainder, units[level]) )
+#定义一个函数用来将尺寸变为KB、MB这样的单位
+#size-是os.getsize()返回的文件尺寸数值
+#is_1024_byte 表明以1024去转化仍是1000去转化，默认是1024
+#先定义的后缀
+SUFFIXES = {1000:['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+            1024:['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
+def size2human(size,is_1024_byte=False):
+    #mutiple默认是1024
+    mutiple=1000 if is_1024_byte else 1024
+    #与for遍历结合起来，这样来进行递级的转换
+    for suffix in SUFFIXES[mutiple]:
+        size/=mutiple
+        #直到Size小于能往下一个单位变的数值
+        if size<mutiple:
+            return '{0:.1f}{1}'.format(size,suffix)
+    raise ValueError('number too large') #抛出异常
 
 def get_books_list():
     book = xlrd2.open_workbook(ROOT_EXCEL)
@@ -179,4 +272,5 @@ def get_down_url(url):
 if __name__ == '__main__':
     get_down_object()
     download_file()
+
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
