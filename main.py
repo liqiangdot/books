@@ -1,6 +1,7 @@
 # -*- coding: utf-8
 
 import os
+import re
 import sys
 import xlrd2
 import time
@@ -14,7 +15,7 @@ from requests_html import HTMLSession
 ROOT_SHEET = "藏书目录"
 ROOT_WEB = 'https://drive.my-elibrary.com'
 
-ROOT_DIR = 'Z:\\bacpup_other\\data'
+ROOT_DIR = 'C:\\backup\\data'
 ROOT_EXCEL = '1.xlsx'
 ROOT_OBJECT = 'all.object'
 ROOT_ERROR_OBJECT = 'err.object'
@@ -74,8 +75,10 @@ class GetOtherLink:
     def get_save(self):
         self.get_page()
         str_xpath = "/html/body/div[1]/div[3]/a"
-        other_url = self.r.html.xpath(str_xpath, first=True).links
-        return other_url
+        other_url_set = self.r.html.xpath(str_xpath, first=True).links
+        url_list = list(other_url_set)
+        if len(url_list) > 0:
+            return url_list[0]
 
 class FileSave:
     # 传入文件名及URL都是已经处理过的，可以直接使用
@@ -163,6 +166,9 @@ class FileSave:
                     return
                 if self.size == 0:
                     print('不能正确获取到将下载文件大小(%s)' % (self.url))
+                    geto = GetOtherLink(self.url)
+                    url_str = geto.get_save()
+                    print("另外的下载链接：%s" % (url_str))
                     raise
                 print('开始处理：%s' %(self.url))
                 print('开始下载，文件大小:[{size:.2f}] MB'.format(size = content_size / chunk_size / 1024))  # 开始下载，显示下载文件大小
@@ -234,10 +240,7 @@ def download_file():
         o.down_file()
         save_error_obj()
 
-#定义一个函数用来将尺寸变为KB、MB这样的单位
-#size-是os.getsize()返回的文件尺寸数值
-#is_1024_byte 表明以1024去转化仍是1000去转化，默认是1024
-#先定义的后缀
+# 大小单位转换
 SUFFIXES = {1000:['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
             1024:['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
 def size2human(size,is_1024_byte=False):
