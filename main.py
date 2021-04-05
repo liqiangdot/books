@@ -169,7 +169,21 @@ class FileSave:
                     geto = GetOtherLink(self.url)
                     url_str = geto.get_save()
                     print("另外的下载链接：%s" % (url_str))
-                    raise
+                    # 再尝试下载另外链接文件
+                    self.url = url_str
+                    response = requests.get(self.url, stream=True)
+                    self.resp = response
+                    self.status_code = response.status_code
+                    if response.status_code == 200:  # 判断是否响应成功
+                        self.size = content_size = self.get_length()  # 下载文件总大小
+                        if fsize != 0 and fsize == self.size:
+                            print("文件已存在且文件的大小(%s)检查正确，无需下载！ {%s}" % (size2human(fsize), self.name))
+                            # 更新下载成功列表
+                            GLOBAL_DOWN_SUCCE.append(self)
+                            return
+                        if self.size == 0:
+                            print('不能正确获取到将下载文件大小(%s)' % (self.url))
+                            #raise
                 print('开始处理：%s' %(self.url))
                 print('开始下载，文件大小:[{size:.2f}] MB'.format(size = content_size / chunk_size / 1024))  # 开始下载，显示下载文件大小
                 with open(self.name, 'wb') as file:  # 显示进度条
