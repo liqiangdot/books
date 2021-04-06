@@ -273,12 +273,9 @@ class FileSave:
 
             str_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
             print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE/(1024 * 1024), str_time))
-        except requests.exceptions.ConnectionError as error:
-            self.status = -2 # 连接出错，需要重新连接
-            print("\033[1;31m文件下载失败：" + self.url + "\033[0m")
-        else:
+        except:
             self.status = -1 # 发生异常
-            print("\033[1;31m文件下载失败：" + self.url + "，错误码：" + str(self.response.status_code) + "\033[0m")
+            print("\033[1;31m文件下载失败：" + self.url + "\033[0m")
             GLOBAL_DOWN_ERROR.append(self)
             self.__write_err_file()
 
