@@ -150,7 +150,7 @@ class FileSave:
 
             global GLOBAL_DOWN_ERR200
             GLOBAL_DOWN_ERR200.append(self)
-            self.write_200_file()
+            self.__write_200_file()
         GLOBAL_DOWN_ERROR.append(self)
         self.write_err_file()
 
@@ -250,7 +250,7 @@ class FileSave:
             self.status = -1 # 发生异常
             print("\033[1;31m文件下载失败：" + self.url + "，错误码：" + str(self.response.status_code) + "\033[0m")
             GLOBAL_DOWN_ERROR.append(self)
-            self.write_err_file()
+            self.__write_err_file()
 
 
 def get_down_object():
