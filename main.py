@@ -333,7 +333,7 @@ def get_books_list():
         file_obj = FileSave(save_dir, down_url)
         global GLOBAL_DOWN_LIST
         GLOBAL_DOWN_LIST.append(file_obj)
-
+        del file_obj
     update_object_file()
 
 def update_object_file():
