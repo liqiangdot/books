@@ -1,6 +1,7 @@
 # -*- coding: utf-8
 
 import os
+import gc
 import re
 import sys
 import xlrd2
@@ -27,6 +28,16 @@ GLOBAL_DOWN_ERROR = []
 GLOBAL_DOWN_ERR200 = []
 GLOBAL_DOWN_SUCCE = []
 GLOBAL_DOWN_SIZE = 0
+
+def get_unreachable_memory_len():
+    # check memory on memory leaks
+    gc.set_debug(gc.DEBUG_SAVEALL)
+    gc.collect()
+    unreachableL = []
+    for it in gc.garbage:
+        unreachableL.append(it)
+    print (str(unreachableL))
+    return len(str(unreachableL))
 
 # 下载第三方站点文件
 class GetOtherFile:
@@ -65,6 +76,7 @@ class GetOtherFile:
         self.__get_header()
         try:
             session = HTMLSession()
+            session.keep_alive = False
             self.r = session.get(self.url, headers=self.headers)
             self.r.raise_for_status()
         except requests.exceptions.RequestException as e:
@@ -305,6 +317,10 @@ def download_file():
         o.down_file()
         save_error_obj()
 
+        del o
+
+        get_unreachable_memory_len()
+
 # 大小单位转换
 SUFFIXES = {1000:['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
             1024:['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
@@ -324,6 +340,7 @@ def get_books_list():
     sheet = book.sheet_by_name(ROOT_SHEET)
 
     for i in range(sheet.nrows):
+        get_unreachable_memory_len()
         url_list = sheet.row_values(i)      # 简体文件名 | 繁体文件名 | 网站目录
         save_dir = ROOT_DIR + url_list[2]   # 保存路径
         # 特殊字符替换
@@ -334,6 +351,8 @@ def get_books_list():
         global GLOBAL_DOWN_LIST
         GLOBAL_DOWN_LIST.append(file_obj)
         del file_obj
+
+        get_unreachable_memory_len()
     update_object_file()
 
 def update_object_file():
