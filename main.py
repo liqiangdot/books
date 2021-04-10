@@ -16,7 +16,7 @@ from requests_html import HTMLSession
 ROOT_SHEET = "藏书目录"
 ROOT_WEB = 'https://drive.my-elibrary.com'
 
-ROOT_DIR = 'C:\\backup\\data'
+ROOT_DIR = 'Z:\\backup\\data'
 ROOT_EXCEL = '1.xlsx'
 ROOT_OBJECT = 'all.object'
 ROOT_ERROR_OBJECT = 'err.object'
