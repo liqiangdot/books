@@ -22,22 +22,146 @@ ROOT_OBJECT = 'all.object'
 ROOT_ERROR_OBJECT = 'err.object'
 ROOT_SUCCESS_OBJECT = 'suc.object'
 ROOT_ERROR_file = 'error.txt'
-ROOT_ERR200_file = 'err200.txt'
+ROOT_ERROR_EXECPT_file = 'except.txt'
+ROOT_3RDSITE_file = 'other3rd.txt'
+# 总下载列表
 GLOBAL_DOWN_LIST = []
+# 下载出错列表
 GLOBAL_DOWN_ERROR = []
+# 第三方网站下载列表
 GLOBAL_DOWN_ERR200 = []
+# 下载成功列表
 GLOBAL_DOWN_SUCCE = []
+# 总下载数据字节数
 GLOBAL_DOWN_SIZE = 0
+# 下载片大小
+GLOBAL_DOWN_MAX = 8192
 
-def get_unreachable_memory_len():
-    # check memory on memory leaks
-    gc.set_debug(gc.DEBUG_SAVEALL)
-    gc.collect()
-    unreachableL = []
-    for it in gc.garbage:
-        unreachableL.append(it)
-    print (str(unreachableL))
-    return len(str(unreachableL))
+# 生成随机的UA
+def get_ua():
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.163 Safari/535.1",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20100101 Firefox/6.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0.1) Gecko/20100101 Firefox/4.0.1",
+        "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
+        "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11",
+        "Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11",
+        "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
+        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0;",
+        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)",
+        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
+        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; GTB7.0)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)",
+        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Maxthon 2.0)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; SE 2.X MetaSr 1.0; SE 2.X MetaSr 1.0; .NET CLR 2.0.50727; SE 2.X MetaSr 1.0)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; 360SE)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; TencentTraveler 4.0)",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
+        "Opera/9.80 (Windows NT 6.1; U; zh-cn) Presto/2.9.168 Version/11.50",
+        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 2.0.50727; SLCC2; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; Tablet PC 2.0; .NET4.0E)",
+        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; InfoPath.3)",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.1; ) AppleWebKit/534.12 (KHTML, like Gecko) Maxthon/3.0 Safari/534.12",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E)",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E; SE 2.X MetaSr 1.0)",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.3 (KHTML, like Gecko) Chrome/6.0.472.33 Safari/534.3 SE 2.X MetaSr 1.0",
+        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E)",
+        "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.41 Safari/535.1 QQBrowser/6.9.11079.201",
+        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E) QQBrowser/6.9.11079.20a1",
+        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)",
+        "Mozilla/5.0 (Linux; U; Android 2.3.6; en-us; Nexus S Build/GRK39F) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/532.5 (KHTML, like Gecko) Chrome/4.0.249.0 Safari/532.5",
+        "Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US) AppleWebKit/532.9 (KHTML, like Gecko) Chrome/5.0.310.0 Safari/532.9",
+        "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US) AppleWebKit/534.7 (KHTML, like Gecko) Chrome/7.0.514.0 Safari/534.7",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/534.14 (KHTML, like Gecko) Chrome/9.0.601.0 Safari/534.14",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.14 (KHTML, like Gecko) Chrome/10.0.601.0 Safari/534.14",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.20 (KHTML, like Gecko) Chrome/11.0.672.2 Safari/534.20",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.27 (KHTML, like Gecko) Chrome/12.0.712.0 Safari/534.27",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1",
+        "Mozilla/5.0 (Windows NT 6.0) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.874.120 Safari/535.2",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.36 Safari/535.7",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.0 x64; en-US; rv:1.9pre) Gecko/2008072421 Minefield/3.0.2pre",
+        "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.10) Gecko/2009042316 Firefox/3.0.10",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.0.11) Gecko/2009060215 Firefox/3.0.11 (.NET CLR 3.5.30729)",
+        "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6 GTB5",
+        "Mozilla/5.0 (Windows; U; Windows NT 5.1; tr; rv:1.9.2.8) Gecko/20100722 Firefox/3.6.8 ( .NET CLR 3.5.30729; .NET4.0E)",
+        "Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1",
+        "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:2.0.1) Gecko/20100101 Firefox/4.0.1",
+        "Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0a2) Gecko/20110622 Firefox/6.0a2",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:2.0b4pre) Gecko/20100815 Minefield/4.0b4pre",
+        "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0 )",
+        "Mozilla/4.0 (compatible; MSIE 5.5; Windows 98; Win 9x 4.90)",
+        "Mozilla/5.0 (Windows; U; Windows XP) Gecko MultiZilla/1.6.1.0a",
+        "Mozilla/2.02E (Win95; U)",
+        "Mozilla/3.01Gold (Win95; I)",
+        "Mozilla/4.8 [en] (Windows NT 5.1; U)",
+        "Mozilla/5.0 (Windows; U; Win98; en-US; rv:1.4) Gecko Netscape/7.1 (ax)",
+        "HTC_Dream Mozilla/5.0 (Linux; U; Android 1.5; en-ca; Build/CUPCAKE) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (hp-tablet; Linux; hpwOS/3.0.2; U; de-DE) AppleWebKit/534.6 (KHTML, like Gecko) wOSBrowser/234.40.1 Safari/534.6 TouchPad/1.0",
+        "Mozilla/5.0 (Linux; U; Android 1.5; en-us; sdk Build/CUPCAKE) AppleWebkit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 2.1; en-us; Nexus One Build/ERD62) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-us; Nexus One Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 1.5; en-us; htc_bahamas Build/CRB17) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 2.1-update1; de-de; HTC Desire 1.19.161.5 Build/ERE27) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-us; Sprint APA9292KT Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 1.5; de-ch; HTC Hero Build/CUPCAKE) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-us; ADR6300 Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 2.1; en-us; HTC Legend Build/cupcake) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 1.5; de-de; HTC Magic Build/PLAT-RC33) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1 FirePHP/0.3",
+        "Mozilla/5.0 (Linux; U; Android 1.6; en-us; HTC_TATTOO_A3288 Build/DRC79) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 1.0; en-us; dream) AppleWebKit/525.10  (KHTML, like Gecko) Version/3.0.4 Mobile Safari/523.12.2",
+        "Mozilla/5.0 (Linux; U; Android 1.5; en-us; T-Mobile G1 Build/CRB43) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari 525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 1.5; en-gb; T-Mobile_G2_Touch Build/CUPCAKE) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 2.0; en-us; Droid Build/ESD20) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-us; Droid Build/FRG22D) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 2.0; en-us; Milestone Build/ SHOLS_U2_01.03.1) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 2.0.1; de-de; Milestone Build/SHOLS_U2_01.14.0) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 3.0; en-us; Xoom Build/HRI39) AppleWebKit/525.10  (KHTML, like Gecko) Version/3.0.4 Mobile Safari/523.12.2",
+        "Mozilla/5.0 (Linux; U; Android 0.5; en-us) AppleWebKit/522  (KHTML, like Gecko) Safari/419.3",
+        "Mozilla/5.0 (Linux; U; Android 1.1; en-gb; dream) AppleWebKit/525.10  (KHTML, like Gecko) Version/3.0.4 Mobile Safari/523.12.2",
+        "Mozilla/5.0 (Linux; U; Android 2.0; en-us; Droid Build/ESD20) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 2.1; en-us; Nexus One Build/ERD62) AppleWebKit/530.17 (KHTML, like Gecko) Version/4.0 Mobile Safari/530.17",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-us; Sprint APA9292KT Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-us; ADR6300 Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 2.2; en-ca; GT-P1000M Build/FROYO) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
+        "Mozilla/5.0 (Linux; U; Android 3.0.1; fr-fr; A500 Build/HRI66) AppleWebKit/534.13 (KHTML, like Gecko) Version/4.0 Safari/534.13",
+        "Mozilla/5.0 (Linux; U; Android 3.0; en-us; Xoom Build/HRI39) AppleWebKit/525.10  (KHTML, like Gecko) Version/3.0.4 Mobile Safari/523.12.2",
+        "Mozilla/5.0 (Linux; U; Android 1.6; es-es; SonyEricssonX10i Build/R1FA016) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1",
+        "Mozilla/5.0 (Linux; U; Android 1.6; en-us; SonyEricssonX10i Build/R1AA056) AppleWebKit/528.5  (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1"
+    ]
+    random_agent = USER_AGENTS[random.randint(0, len(USER_AGENTS) - 1)]
+    headers = {
+        'User-Agent': random_agent,
+    }
+    return headers
+
+def print_down_info():
+    str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE / (1024 * 1024), str_time))
+
+def write_except_file(e):
+    with open(ROOT_ERROR_EXECPT_file, 'a', encoding='utf-8') as f:
+        f.write(repr(e)+ '\n')
+
+# 大小单位转换
+SUFFIXES = {1000:['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+            1024:['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
+def size2human(size,is_1024_byte=False):
+    #mutiple默认是1024
+    mutiple=1000 if is_1024_byte else 1024
+    #与for遍历结合起来，这样来进行递级的转换
+    for suffix in SUFFIXES[mutiple]:
+        size/=mutiple
+        #直到Size小于能往下一个单位变的数值
+        if size<mutiple:
+            return '{0:.1f}{1}'.format(size,suffix)
+    raise ValueError('number too large') #抛出异常
 
 # 下载第三方站点文件
 class GetOtherFile:
@@ -48,78 +172,66 @@ class GetOtherFile:
         self.size = 0
 
     def __get_header(self):
-        USER_AGENTS = [
-            "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AcooBrowser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
-            "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Acoo Browser; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.0.04506)",
-            "Mozilla/4.0 (compatible; MSIE 7.0; AOL 9.5; AOLBuild 4337.35; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
-            "Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)",
-            "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 2.0.50727; Media Center PC 6.0)",
-            "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 1.0.3705; .NET CLR 1.1.4322)",
-            "Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 5.2; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2; .NET CLR 3.0.04506.30)",
-            "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN) AppleWebKit/523.15 (KHTML, like Gecko, Safari/419.3) Arora/0.3 (Change: 287 c9dfb30)",
-            "Mozilla/5.0 (X11; U; Linux; en-US) AppleWebKit/527+ (KHTML, like Gecko, Safari/419.3) Arora/0.6",
-            "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2pre) Gecko/20070215 K-Ninja/2.1.1",
-            "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
-            "Mozilla/5.0 (X11; Linux i686; U;) Gecko/20070322 Kazehakase/0.4.5",
-            "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6",
-            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.20 (KHTML, like Gecko) Chrome/19.0.1036.7 Safari/535.20",
-            "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52",
-        ]
-        random_agent = USER_AGENTS[random.randint(0, len(USER_AGENTS) - 1)]
-        self.headers = {
-            'User-Agent': random_agent,
-        }
+        self.headers = get_ua()
 
     # 获取包含下载链接的页面
     def __get_container_page(self):
         self.__get_header()
         try:
             session = HTMLSession()
-            session.keep_alive = False
             self.r = session.get(self.url, headers=self.headers)
             self.r.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            # 获取容器页面出错
-            print(e)
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout, requests.exceptions.RequestException, Exception )as err:
+            print("Error:", err)
             self.r = None
-            self.status = -1 # 获取容器页面出错
-        return self.r
+            self.status = -1  # 获取容器页面出错
+            print("获取包含第三方站点链接页面失败，URL[%s]，文件名[%s]" % (self.url, self.file))
+            write_except_file(err)
 
     # 获取外链的值
     def __get_3rd_url(self):
         self.__get_container_page()
+        if self.status < 0:
+            return # 获取第三方站点链接页面出错，返回。
+
         str_xpath = "/html/body/div[1]/div[3]/a"
         other_url_set = self.r.html.xpath(str_xpath, first=True).links
-        url_list = list(other_url_set)
+        url_list = list(other_url_set) # set转list
         if len(url_list) > 0:
+            # 获取第一个xpath值
             print("第三方链接：" + url_list[0])
             self.url_3rd = url_list[0]
         else:
             self.url_3rd = ""
-            self.status = -2 # 解析容器页面出错
+            self.status = -2 # 获取第三方站点链接出错
 
     def get_3rd_file(self):
         self.__get_3rd_url()
+        if self.status < 0:
+            return # 获取第三方站点链接出错，返回。
         try:
-            r = requests.get(self.url_3rd, stream=True)
+            r = requests.get(self.url_3rd, headers=self.headers, stream=True)
             r.raise_for_status()
             f = open(self.file, "wb")
-            for chunk in r.iter_content(chunk_size=1024):
+            for chunk in r.iter_content(chunk_size=GLOBAL_DOWN_MAX):
                 if chunk:
                     f.write(chunk)
 
             f.flush()
-            print("第三方站点下载完成(%s)" % (self.url))
-        except requests.exceptions.RequestException as e:
-            # 打印出错误信息
-            print(e)
-            self.status = -3 # 下载目标文件出错
 
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout, requests.exceptions.RequestException, Exception)as err:
+            print("Error:", err)
+            self.r = None
+            self.status = -3 # 第三方站点下载目标文件出错
+            print("下载第三方站点文件失败，URL[%s]，文件名[%s]" % (self.url, self.file))
+            write_except_file(err)
+
+        # 获取文件大小
         self.size = os.path.getsize(self.file)
-        global GLOBAL_DOWN_ERR200
-        GLOBAL_DOWN_ERR200.append(self)
-        print("第三方站点下载完成(%d)" % (self.size))
+        print("第三方站点下载完成[%d][%s]" % (self.size, self.file))
+        self.status = -0
 
 class FileSave:
     # 传入文件名及URL都是已经处理过的，可以直接使用
@@ -131,42 +243,19 @@ class FileSave:
         self.size = 0	# 文件大小
 
     def __get_header(self):
-        USER_AGENTS = [
-            "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AcooBrowser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
-            "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Acoo Browser; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.0.04506)",
-            "Mozilla/4.0 (compatible; MSIE 7.0; AOL 9.5; AOLBuild 4337.35; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
-            "Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)",
-            "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 2.0.50727; Media Center PC 6.0)",
-            "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 1.0.3705; .NET CLR 1.1.4322)",
-            "Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 5.2; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2; .NET CLR 3.0.04506.30)",
-            "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN) AppleWebKit/523.15 (KHTML, like Gecko, Safari/419.3) Arora/0.3 (Change: 287 c9dfb30)",
-            "Mozilla/5.0 (X11; U; Linux; en-US) AppleWebKit/527+ (KHTML, like Gecko, Safari/419.3) Arora/0.6",
-            "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2pre) Gecko/20070215 K-Ninja/2.1.1",
-            "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
-            "Mozilla/5.0 (X11; Linux i686; U;) Gecko/20070322 Kazehakase/0.4.5",
-            "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6",
-            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.20 (KHTML, like Gecko) Chrome/19.0.1036.7 Safari/535.20",
-            "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52",
-        ]
-
-        random_agent = USER_AGENTS[random.randint(0, len(USER_AGENTS) - 1)]
-        self.headers = {
-            'User-Agent': random_agent,
-        }
+        self.headers = get_ua()
 
     # 记录错误文件
     def __write_err_file(self):
         with open(ROOT_ERROR_file, 'a', encoding='utf-8') as f:
             f.write(self.url + '\n')
-        return
 
     # 记录第三方网站信息
-    def __write_200_file(self):
-        with open(ROOT_ERR200_file, 'a', encoding='utf-8') as f:
+    def __write_3rd_file(self):
+        with open(ROOT_3RDSITE_file, 'a', encoding='utf-8') as f:
             f.write(self.url + '\n')
-        return
 
+    # 预备目录环境
     def __ready_dir(self):
         end_pos = self.name.rfind("\\")
         if end_pos != -1:
@@ -178,21 +267,7 @@ class FileSave:
             #print("创建目录：" + self.dir)
             os.makedirs(self.dir)
 
-    def __dow_error(self):
-        print("下载出现异常。")
-
-        if self.status_code == 200:
-            # 外部链接
-            Other = GetOtherFile(self.name, self.url)
-            self.url = Other.get_save()
-            self.down_file()
-
-            global GLOBAL_DOWN_ERR200
-            GLOBAL_DOWN_ERR200.append(self)
-            self.__write_200_file()
-        GLOBAL_DOWN_ERROR.append(self)
-        self.write_err_file()
-
+    # 获取远程文件大小
     def __get_length(self):
         is_chunked = self.response.headers.get('transfer-encoding', '') == 'chunked'
         content_length_s = self.response.headers.get('content-length')
@@ -200,12 +275,7 @@ class FileSave:
             content_length = int(content_length_s)
         else:
             content_length = 0
-
         return content_length
-
-    def __print_info(self):
-        str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-        print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE / (1024 * 1024), str_time))
 
     def down_file(self):
         # 判断路径是否存在
@@ -215,33 +285,44 @@ class FileSave:
         global GLOBAL_DOWN_SIZE
         global GLOBAL_DOWN_SUCCE
         global GLOBAL_DOWN_ERROR
-        fsize = 0
+
         if os.path.exists(self.name):
             fsize = os.path.getsize(self.name)
+        else:
+            fsize = 0
 
         start = time.time()  # 下载开始时间
         try:
             self.response = requests.get(self.url, headers=self.headers, stream=True)
             size = 0  # 初始化已下载大小
-            chunk_size = 1024  # 每次下载的数据大小
+            chunk_size = GLOBAL_DOWN_MAX  # 每次下载的数据大小
             self.response.raise_for_status()
             # 判断是否响应成功
             if self.response.status_code == 200:
                 self.size = self.__get_length()  # 下载文件总大小
                 if fsize != 0 and fsize == self.size:
-                    print("文件已存在且文件的大小(%s)检查正确，无需下载！ {%s}" % (size2human(fsize), self.name))
                     # 更新下载成功列表
                     GLOBAL_DOWN_SUCCE.append(self)
+                    GLOBAL_DOWN_ERR200.append(self)
+                    # 更新已下载数据
+                    GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + fsize
+                    print("文件之前已下载成功，大小(%s)名称(%s)" % (size2human(fsize), self.name))
+                    print_down_info()
                     return
                 if self.size == 0:
                     # 未成功获取到下载文件的大小，可能是文件保存在第三方站点，需要另外下载
-                    print('不能正确获取到将下载文件大小(%s)' % (self.url))
+                    print('在本站点不能获取到将下载文件大小(%s)' % (self.url))
                     other_3rd_file = GetOtherFile(self.name, self.url)
                     # 检查文件是否存在，如果存在，则默认是正确下载了
                     if os.path.exists(self.name):
-                        print("可能是第三方站点下载，文件已存在默认为已成功下载：%s" % (self.name))
-                        GLOBAL_DOWN_SUCCE.append(self)
+                        fsize = os.path.getsize(self.name)
+                        if fize != 0:
+                            print("可能是第三方站点下载，文件已存在且大小不为零则认为已成功下载：%s" % (self.name))
+                            GLOBAL_DOWN_SUCCE.append(self)
+                            GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + fsize
+                            return
                     else:
+                        # 文件不存在或者文件大小为零，需要下载第三方站点文件
                         other_3rd_file.get_3rd_file()
                         if other_3rd_file.status != 0:
                             print("第三方站点下载失败，文件信息：%s" %(other_3rd_file.file))
@@ -251,15 +332,17 @@ class FileSave:
                         else:
                             print("第三方站点下载成功，连接信息：%s" % (other_3rd_file.file))
                             GLOBAL_DOWN_SUCCE.append(self)
+                            GLOBAL_DOWN_ERR200.append(self)
                             GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + other_3rd_file.size
-                            self.__print_info()
+                            print_down_info()
                     return
                 # 当前站点下载且没有下载过此文件
                 if self.size != 0 and fsize == 0:
                     print('开始下载：%s' % (self.url))
-                    print('开始下载，文件大小:[{size:.2f}] MB'.format(size=self.size / chunk_size / 1024))  # 开始下载，显示下载文件大小
+                    #print('开始下载，文件大小:[{size:.2f}] MB'.format(size=self.size / chunk_size / 1024))  # 开始下载，显示下载文件大小
+                    print('开始下载，文件大小:[%s] '% (size2human(size=self.size)))
                     with open(self.name, 'wb') as file:  # 显示进度条
-                        for data in self.response.iter_content(chunk_size=chunk_size):
+                        for data in self.response.iter_content(chunk_size=GLOBAL_DOWN_MAX):
                             file.write(data)
                             size += len(data)
                             now_t = time.time()
@@ -283,14 +366,14 @@ class FileSave:
                         GLOBAL_DOWN_ERROR.append(self)
                         self.__write_err_file()
 
-            str_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-            print("下载总数据量：%.2f(MBit) 当前时间：%s" % (GLOBAL_DOWN_SIZE/(1024 * 1024), str_time))
-        except:
+            print_down_info()
+        except Exception as err:
+            print(err)
             self.status = -1 # 发生异常
             print("\033[1;31m文件下载失败：" + self.url + "\033[0m")
             GLOBAL_DOWN_ERROR.append(self)
             self.__write_err_file()
-
+            write_except_file(err)
 
 def get_down_object():
     if os.path.exists(ROOT_OBJECT):
@@ -317,30 +400,16 @@ def download_file():
         o.down_file()
         save_error_obj()
 
-        del o
-
-        get_unreachable_memory_len()
-
-# 大小单位转换
-SUFFIXES = {1000:['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
-            1024:['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
-def size2human(size,is_1024_byte=False):
-    #mutiple默认是1024
-    mutiple=1000 if is_1024_byte else 1024
-    #与for遍历结合起来，这样来进行递级的转换
-    for suffix in SUFFIXES[mutiple]:
-        size/=mutiple
-        #直到Size小于能往下一个单位变的数值
-        if size<mutiple:
-            return '{0:.1f}{1}'.format(size,suffix)
-    raise ValueError('number too large') #抛出异常
+def get_down_url(url):
+    url = url.replace("\\", "/")
+    ret = ROOT_WEB + url
+    return ret
 
 def get_books_list():
     book = xlrd2.open_workbook(ROOT_EXCEL)
     sheet = book.sheet_by_name(ROOT_SHEET)
 
     for i in range(sheet.nrows):
-        get_unreachable_memory_len()
         url_list = sheet.row_values(i)      # 简体文件名 | 繁体文件名 | 网站目录
         save_dir = ROOT_DIR + url_list[2]   # 保存路径
         # 特殊字符替换
@@ -350,9 +419,7 @@ def get_books_list():
         file_obj = FileSave(save_dir, down_url)
         global GLOBAL_DOWN_LIST
         GLOBAL_DOWN_LIST.append(file_obj)
-        del file_obj
 
-        get_unreachable_memory_len()
     update_object_file()
 
 def update_object_file():
@@ -366,18 +433,14 @@ def update_status_object_file():
     pickle.dump(GLOBAL_DOWN_ERROR, f)
     print("下载成功/错误文件个数：[%d/%d]" % (len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERROR)))
 
-def get_down_url(url):
-    url = url.replace("\\", "/")
-    ret = ROOT_WEB + url
-    return ret
-
 def init_log():
     # 初始化环境
     str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
     with open(ROOT_ERROR_file, 'w') as f:
         f.write(str_time + '\n')
-    with open(ROOT_ERR200_file, 'a') as f:
+    with open(ROOT_3RDSITE_file, 'a') as f:
         f.write(str_time + '\n')
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     init_log()
