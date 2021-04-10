@@ -6,6 +6,7 @@ import re
 import sys
 import xlrd2
 import time
+import math
 import random
 import pickle
 import requests
@@ -35,7 +36,9 @@ GLOBAL_DOWN_SUCCE = []
 # 总下载数据字节数
 GLOBAL_DOWN_SIZE = 0
 # 下载片大小
-GLOBAL_DOWN_MAX = 8192
+GLOBAL_DOWN_MAX = 1024
+# 开始时间
+GLOBAL_START_TIME = 0
 
 # 生成随机的UA
 def get_ua():
@@ -162,6 +165,22 @@ def size2human(size,is_1024_byte=False):
         if size<mutiple:
             return '{0:.1f}{1}'.format(size,suffix)
     raise ValueError('number too large') #抛出异常
+
+def size2Time(allTime):
+    day = 24 * 60 * 60
+    hour = 60 * 60
+    min = 60
+    if allTime < 60:
+        return "%d sec" % math.ceil(allTime)
+    elif allTime > day:
+        days = divmod(allTime, day)
+        return ("%d 天, %s"%(int(days[0]), size2Time(days[1])))
+    elif allTime > hour:
+        hours = divmod(allTime, hour)
+        return ('%d 小时, %s'%(int(hours[0]),size2Time(hours[1])))
+    else:
+        mins = divmod(allTime, min)
+        return ("%d 分, %d 秒"%(int(mins[0]),math.ceil(mins[1])))
 
 # 下载第三方站点文件
 class GetOtherFile:
@@ -303,7 +322,6 @@ class FileSave:
                 if fsize != 0 and fsize == self.size:
                     # 更新下载成功列表
                     GLOBAL_DOWN_SUCCE.append(self)
-                    GLOBAL_DOWN_ERR200.append(self)
                     # 更新已下载数据
                     GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + fsize
                     print("文件之前已下载成功，大小(%s)名称(%s)" % (size2human(fsize), self.name))
@@ -316,9 +334,10 @@ class FileSave:
                     # 检查文件是否存在，如果存在，则默认是正确下载了
                     if os.path.exists(self.name):
                         fsize = os.path.getsize(self.name)
-                        if fize != 0:
+                        if fsize != 0:
                             print("可能是第三方站点下载，文件已存在且大小不为零则认为已成功下载：%s" % (self.name))
                             GLOBAL_DOWN_SUCCE.append(self)
+                            GLOBAL_DOWN_ERR200.append(self)
                             GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + fsize
                             return
                     else:
@@ -394,8 +413,10 @@ def download_file():
     number = len(GLOBAL_DOWN_LIST)
     i = 1
     for o in GLOBAL_DOWN_LIST:
+        total_sec = time.time() - GLOBAL_START_TIME
         str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-        print("开始处理：当前下载/总数[%d/%d]，状态：已成功/别处下载/错误[%d/%d/%d] (%s)" % (i, number, len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERR200), len(GLOBAL_DOWN_ERROR), str_time))
+        print("开始处理：当前下载/总数[%d/%d]，状态：已成功/别处下载/错误[%d/%d/%d] (%s)，总用时(%s)" %
+              (i, number, len(GLOBAL_DOWN_SUCCE), len(GLOBAL_DOWN_ERR200), len(GLOBAL_DOWN_ERROR), str_time, size2Time(total_sec)))
         i = i + 1
         o.down_file()
         save_error_obj()
@@ -443,6 +464,7 @@ def init_log():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    GLOBAL_START_TIME = time.time()
     init_log()
     get_down_object()
     download_file()
