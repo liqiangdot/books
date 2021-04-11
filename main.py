@@ -14,6 +14,12 @@ import urllib.request
 from requests_html import HTML
 from requests_html import HTMLSession
 
+'''
+TODO:
+1，可以考虑判断文件是否下载成功条件是：文件存在且大小不为零 
+2，增加按行读取错误文件，解析然后再下载。
+
+'''
 ROOT_SHEET = "藏书目录"
 ROOT_WEB = 'https://drive.my-elibrary.com'
 
@@ -36,7 +42,7 @@ GLOBAL_DOWN_SUCCE = []
 # 总下载数据字节数
 GLOBAL_DOWN_SIZE = 0
 # 下载片大小
-GLOBAL_DOWN_MAX = 1024
+GLOBAL_DOWN_MAX = 10240
 # 开始时间
 GLOBAL_START_TIME = 0
 
@@ -232,12 +238,18 @@ class GetOtherFile:
         try:
             r = requests.get(self.url_3rd, headers=self.headers, stream=True)
             r.raise_for_status()
-            f = open(self.file, "wb")
-            for chunk in r.iter_content(chunk_size=GLOBAL_DOWN_MAX):
-                if chunk:
-                    f.write(chunk)
-
-            f.flush()
+            i = 0
+            size = 0
+            start_t = time.time()
+            with open(self.file, 'wb') as f:  # 显示进度条
+                for data in r.iter_content(chunk_size=GLOBAL_DOWN_MAX):
+                    if data:
+                        f.write(data)
+                        size += len(data)
+                        i = i + 1
+                        now_t = time.time()
+                        print('\r' + '[下载进度]：%s(实时速度：%.2fKB/秒)' %  ( '>' * i, float(size / ((now_t - start_t) * 1024))), end=' ')
+                        f.flush()
 
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout, requests.exceptions.RequestException, Exception)as err:
@@ -296,7 +308,8 @@ class FileSave:
             content_length = 0
         return content_length
 
-    def down_file(self):
+    # 默认为仅检查文件是否存在且大小不为零则认为是已经成功下载
+    def down_file(self, chk = True):
         # 判断路径是否存在
         self.__ready_dir()
         self.__get_header()
@@ -307,6 +320,9 @@ class FileSave:
 
         if os.path.exists(self.name):
             fsize = os.path.getsize(self.name)
+            if fsize != 0 and chk == True:
+                print("文件之前已下载成功，大小(%s)名称(%s)" % (size2human(fsize), self.name))
+                return
         else:
             fsize = 0
 
