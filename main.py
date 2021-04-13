@@ -163,6 +163,20 @@ def size2human(size,is_1024_byte=False):
             return '{0:.1f}{1}'.format(size,suffix)
     raise ValueError('number too large') #抛出异常
 
+class GetErrorFile:
+    def __init__(self, err_file):
+        self.err_file = err_file
+        for line in open(self.err_file): 
+            print(line)
+
+    # 获取错误文件里面的链接和文件目录
+    def __get_files(self):
+        self.url
+        self.file
+
+
+
+
 # 下载第三方站点文件
 class GetOtherFile:
     def __init__(self, file, url):
@@ -316,7 +330,7 @@ class FileSave:
                     # 检查文件是否存在，如果存在，则默认是正确下载了
                     if os.path.exists(self.name):
                         fsize = os.path.getsize(self.name)
-                        if fize != 0:
+                        if fsize != 0:
                             print("可能是第三方站点下载，文件已存在且大小不为零则认为已成功下载：%s" % (self.name))
                             GLOBAL_DOWN_SUCCE.append(self)
                             GLOBAL_DOWN_SIZE = GLOBAL_DOWN_SIZE + fsize
