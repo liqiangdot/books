@@ -45,6 +45,8 @@ GLOBAL_DOWN_SIZE = 0
 GLOBAL_DOWN_MAX = 10240
 # 开始时间
 GLOBAL_START_TIME = 0
+# 超时时间
+GLOBAL_TIMEOUT = 16
 
 # 生成随机的UA
 def get_ua():
@@ -172,17 +174,6 @@ def size2human(size,is_1024_byte=False):
             return '{0:.1f}{1}'.format(size,suffix)
     raise ValueError('number too large') #抛出异常
 
-class GetErrorFile:
-    def __init__(self, err_file):
-        self.err_file = err_file
-        for line in open(self.err_file): 
-            print(line)
-
-    # 获取错误文件里面的链接和文件目录
-    def __get_files(self):
-        self.url
-        self.file
-
 def size2Time(allTime):
     day = 24 * 60 * 60
     hour = 60 * 60
@@ -215,7 +206,7 @@ class GetOtherFile:
         self.__get_header()
         try:
             session = HTMLSession()
-            self.r = session.get(self.url, headers=self.headers)
+            self.r = session.get(self.url, headers=self.headers , timeout = GLOBAL_TIMEOUT)
             self.r.raise_for_status()
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout, requests.exceptions.RequestException, Exception )as err:
@@ -247,7 +238,7 @@ class GetOtherFile:
         if self.status < 0:
             return # 获取第三方站点链接出错，返回。
         try:
-            r = requests.get(self.url_3rd, headers=self.headers, stream=True)
+            r = requests.get(self.url_3rd, headers=self.headers, stream=True, timeout = GLOBAL_TIMEOUT)
             r.raise_for_status()
             i = 0
             size = 0
@@ -319,6 +310,20 @@ class FileSave:
             content_length = 0
         return content_length
 
+    def get_error_list(self, err_file):
+        self.err_file = err_file
+        for line in open(self.err_file, encoding='utf-8'):
+            self.url = line
+            f_p = self.url.find(ROOT_WEB)
+            if f_p != -1:
+                file_name = self.url[f_p + len(ROOT_WEB):]
+                file_name = file_name.replace("/", "\\")
+                file_name = ROOT_DIR + file_name
+                self.file = file_name
+
+                print(self.file)
+                print(self.url)
+
     # 默认为仅检查文件是否存在且大小不为零则认为是已经成功下载
     def down_file(self, chk = True):
         # 判断路径是否存在
@@ -339,7 +344,7 @@ class FileSave:
 
         start = time.time()  # 下载开始时间
         try:
-            self.response = requests.get(self.url, headers=self.headers, stream=True)
+            self.response = requests.get(self.url, headers=self.headers, stream=True, timeout = GLOBAL_TIMEOUT)
             size = 0  # 初始化已下载大小
             chunk_size = GLOBAL_DOWN_MAX  # 每次下载的数据大小
             self.response.raise_for_status()
@@ -495,5 +500,4 @@ if __name__ == '__main__':
     init_log()
     get_down_object()
     download_file()
-
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
