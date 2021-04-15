@@ -235,7 +235,6 @@ class GetOtherFile:
         try:
             other_url_set = self.r.html.xpath(str_xpath, first=True) #.links
             if other_url_set == None:
-                self.status = -3  # 获取到了更多的链接，需要后续再下载
                 # 获取外网第三方链接失败，尝试另外一种方法
                 self.url_lists.clear()
                 items = self.r.html.find('.item')
@@ -244,9 +243,11 @@ class GetOtherFile:
                     if size.text == 'NaN KB' or size.text == '':
                         continue
                     # 需要下载的文件链接
+                    self.url_lists.append(list(item.absolute_links)[0])
                     url_list = list(item.absolute_links) # set转list
                     for url in url_list:
                         write_3rd_file(url)
+
             else:
                 url_list = list(other_url_set.links) # set转list
                 if len(url_list) > 0:
@@ -259,6 +260,105 @@ class GetOtherFile:
         except Exception as err:
             write_except_file(err)
 
+    def down_other_files(self):
+        try:
+            r = requests.get(url.split('\n')[0], headers=self.headers, stream=True, timeout = GLOBAL_TIMEOUT)
+            r.raise_for_status()
+            i = 0
+            size = 0
+            start_t = time.time()
+            with open(self.file, 'wb') as f:  # 显示进度条
+                for data in r.iter_content(chunk_size=GLOBAL_DOWN_MAX):
+                    if data:
+                        f.write(data)
+                        size += len(data)
+                        i = i + 1
+                        now_t = time.time()
+                        print('\r' + '[下载进度]：%s(实时速度：%.2fKB/秒)' %  ( '>' * i, float(size / ((now_t - start_t) * 1024))), end=' ')
+                        f.flush()
+
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout, requests.exceptions.RequestException, Exception)as err:
+            print("Error:", err)
+            self.r = None
+            self.status = -3 # 第三方站点下载目标文件出错
+            print("下载第三方站点文件失败，URL[%s]，文件名[%s]" % (self.url, self.file))
+            write_except_file(err)
+
+        # 获取文件大小
+        self.size = os.path.getsize(self.file)
+        print("第三方站点下载完成[%d][%s]" % (self.size, self.file))
+        self.status = -0
+
+    # 下载多个文件
+    def get_3rd_files(self):
+        self.__get_3rd_url()
+        if self.status < 0:
+            return  # 获取第三方站点链接出错，返回。
+
+        if len(self.url_3rd.strip()) != 0:
+            try:
+                r = requests.get(self.url_3rd.split('\n')[0], headers=self.headers, stream=True, timeout=GLOBAL_TIMEOUT)
+                r.raise_for_status()
+                i = 0
+                size = 0
+                start_t = time.time()
+                with open(self.file, 'wb') as f:  # 显示进度条
+                    for data in r.iter_content(chunk_size=GLOBAL_DOWN_MAX):
+                        if data:
+                            f.write(data)
+                            size += len(data)
+                            i = i + 1
+                            now_t = time.time()
+                            print(
+                                '\r' + '[下载进度]：%s(实时速度：%.2fKB/秒)' % ('>' * i, float(size / ((now_t - start_t) * 1024))),
+                                end=' ')
+                            f.flush()
+
+            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout, requests.exceptions.RequestException, Exception)as err:
+                print("Error:", err)
+                self.r = None
+                self.status = -3  # 第三方站点下载目标文件出错
+                print("下载第三方站点文件失败，URL[%s]，文件名[%s]" % (self.url, self.file))
+                write_except_file(err)
+        else:
+            for url in self.url_lists:
+                print (url)
+                filename = os.path.basename(url)
+                self.file = self.dir + "\\" + filename
+                try:
+                    r = requests.get(url.split('\n')[0], headers=self.headers, stream=True,
+                                     timeout=GLOBAL_TIMEOUT)
+                    r.raise_for_status()
+                    i = 0
+                    size = 0
+                    start_t = time.time()
+                    with open(self.file, 'wb') as f:  # 显示进度条
+                        for data in r.iter_content(chunk_size=GLOBAL_DOWN_MAX):
+                            if data:
+                                f.write(data)
+                                size += len(data)
+                                i = i + 1
+                                now_t = time.time()
+                                print('\r' + '[下载进度]：%s(实时速度：%.2fKB/秒)' % (
+                                '>' * i, float(size / ((now_t - start_t) * 1024))), end=' ')
+                                f.flush()
+
+                    # 获取文件大小
+                    self.size = os.path.getsize(self.file)
+                    print("第三方站点下载完成[%d][%s]" % (self.size, self.file))
+                    self.status = 0
+
+                except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                        requests.exceptions.Timeout, requests.exceptions.RequestException, Exception)as err:
+                    print("Error:", err)
+                    self.r = None
+                    self.status = -3  # 第三方站点下载目标文件出错
+                    print("下载第三方站点文件失败，URL[%s]，文件名[%s]" % (self.url, self.file))
+                    write_except_file(err)
+
+    # 下载单个文件
     def get_3rd_file(self):
         self.__get_3rd_url()
         if self.status < 0:
@@ -290,7 +390,7 @@ class GetOtherFile:
         # 获取文件大小
         self.size = os.path.getsize(self.file)
         print("第三方站点下载完成[%d][%s]" % (self.size, self.file))
-        self.status = -0
+        self.status = 0
 
 class FileSave:
     # 传入文件名及URL都是已经处理过的，可以直接使用
@@ -403,7 +503,7 @@ class FileSave:
                             return
                     else:
                         # 文件不存在或者文件大小为零，需要下载第三方站点文件
-                        other_3rd_file.get_3rd_file()
+                        other_3rd_file.get_3rd_files()
                         if other_3rd_file.status != 0:
                             print("第三方站点下载失败，文件信息：%s" %(other_3rd_file.file))
                             print("第三方站点下载失败，连接信息：%s" % (other_3rd_file.url))
