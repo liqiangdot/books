@@ -23,7 +23,7 @@ TODO:
 ROOT_SHEET = "藏书目录"
 ROOT_WEB = 'https://drive.my-elibrary.com'
 
-ROOT_DIR = 'Z:\\backup\\data'
+ROOT_DIR = 'C:\\backup\\data'
 ROOT_EXCEL = '1.xlsx'
 ROOT_OBJECT = 'all.object'
 ROOT_ERROR_OBJECT = 'err.object'
@@ -310,8 +310,8 @@ class FileSave:
             content_length = 0
         return content_length
 
-    def get_error_list(self, err_file):
-        self.err_file = err_file
+    def get_error_list(self):
+        self.err_file = ROOT_ERROR_file
         for line in open(self.err_file, encoding='utf-8'):
             self.url = line
             f_p = self.url.find(ROOT_WEB)
@@ -319,10 +319,12 @@ class FileSave:
                 file_name = self.url[f_p + len(ROOT_WEB):]
                 file_name = file_name.replace("/", "\\")
                 file_name = ROOT_DIR + file_name
-                self.file = file_name
+                self.name = file_name
 
-                print(self.file)
+                print(self.name)
                 print(self.url)
+
+                self.down_file()
 
     # 默认为仅检查文件是否存在且大小不为零则认为是已经成功下载
     def down_file(self, chk = True):
@@ -496,8 +498,12 @@ def init_log():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    GLOBAL_START_TIME = time.time()
-    init_log()
-    get_down_object()
-    download_file()
+    #GLOBAL_START_TIME = time.time()
+    #init_log()
+    #get_down_object()
+    #download_file()
+    dw = FileSave("", "")
+    dw.get_error_list()
+
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
