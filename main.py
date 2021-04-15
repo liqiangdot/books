@@ -23,7 +23,7 @@ TODO:
 ROOT_SHEET = "藏书目录"
 ROOT_WEB = 'https://drive.my-elibrary.com'
 
-ROOT_DIR = 'C:\\backup\\data'
+ROOT_DIR = 'Z:\\bacpup_other\\data'
 ROOT_EXCEL = '1.xlsx'
 ROOT_OBJECT = 'all.object'
 ROOT_ERROR_OBJECT = 'err.object'
@@ -32,6 +32,7 @@ ROOT_ERROR_file = 'error.txt'
 ROOT_ERROR_EXECPT_file = 'except.txt'
 ROOT_3RDSITE_file = 'other3rd.txt'
 ROOT_404ERR_file = '404err.txt'
+ROOT_3rdERR_file = '3rderr.txt'
 # 总下载列表
 GLOBAL_DOWN_LIST = []
 # 下载出错列表
@@ -160,6 +161,10 @@ def print_down_info():
 def write_except_file(e):
     with open(ROOT_ERROR_EXECPT_file, 'a', encoding='utf-8') as f:
         f.write(repr(e)+ '\n')
+
+def write_err_file(url):
+    with open(ROOT_3rdERR_file, 'a', encoding='utf-8') as f:
+        f.write(url + '\n')
 
 # 大小单位转换
 SUFFIXES = {1000:['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
@@ -322,6 +327,7 @@ class GetOtherFile:
                 self.status = -3  # 第三方站点下载目标文件出错
                 print("下载第三方站点文件失败，URL[%s]，文件名[%s]" % (self.url, self.file))
                 write_except_file(err)
+                write_err_file(self.url)
         else:
             for url in self.url_lists:
                 print (url)
@@ -341,8 +347,8 @@ class GetOtherFile:
                                 size += len(data)
                                 i = i + 1
                                 now_t = time.time()
-                                print('\r' + '[下载进度]：%s(实时速度：%.2fKB/秒)' % (
-                                '>' * i, float(size / ((now_t - start_t) * 1024))), end=' ')
+                                #print('\r' + '[下载进度]：%s(实时速度：%.2fKB/秒)' % (
+                                #'>' * i, float(size / ((now_t - start_t) * 1024))), end=' ')
                                 f.flush()
 
                     # 获取文件大小
@@ -355,8 +361,9 @@ class GetOtherFile:
                     print("Error:", err)
                     self.r = None
                     self.status = -3  # 第三方站点下载目标文件出错
-                    print("下载第三方站点文件失败，URL[%s]，文件名[%s]" % (self.url, self.file))
+                    print("\033[1;31m下载第三方站点文件失败，URL[%s]，文件名[%s]\033[0m" % (self.url, self.file))
                     write_except_file(err)
+                    write_err_file(url)
 
     # 下载单个文件
     def get_3rd_file(self):
