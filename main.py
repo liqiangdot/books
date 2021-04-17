@@ -430,6 +430,8 @@ class FileSave:
         else:
             self.dir = self.name
 
+        self.dir = self.dir.replace("?", "")
+
         if not os.path.isdir(self.dir):
             #print("创建目录：" + self.dir)
             os.makedirs(self.dir)
